@@ -1,0 +1,15 @@
+---
+httpd_port: 80
+httpd_servername : ansible.bency.site
+httpd_docroot: /var/www/html/ansible
+httpd_owner : apache
+httpd_group: apache
+wp_url: "https://wordpress.org/wordpress-6.0.3.tar.gz"
+webserver_packages:
+  - httpd
+  - php-fpm
+  - php-mysqlnd
+mysql_root_pass: "mysqlroot@123"
+mysql_user: "wp_user"
+mysql_user_pass: "wpuser@123"
+mysql_wpdb: "wp_db"

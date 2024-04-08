@@ -1,0 +1,91 @@
+---
+- name: "package installation"
+  yum:
+    name: "{{webserver_packages}}"
+    state: present
+
+- name: "creating httpd conf from template"
+  template:
+    src: httpd.conf.j2
+    dest: /etc/httpd/conf/httpd.conf
+
+- name: "creating virtualhost from template"
+  template:
+    src: virtualhost.conf.j2
+    dest: /etc/httpd/conf.d/ansible.conf
+
+- name: "creating docroot for {{httpd_servername}}"
+  file:
+    path: "{{httpd_docroot}}"
+    state: "directory"
+    owner: "{{httpd_owner}}"
+    group: "{{httpd_group}}"
+
+- name: "restarting services"
+  service:
+    name: "{{item}}"
+  with_items:
+    - httpd
+    - php-fpm
+
+- name: "Installing packages - mariadb"
+  yum:
+    name: mariadb105-server,python3-pip
+    state: present
+
+- name: "restarting mariadb"
+  service:
+    name: mariadb
+    state: restarted
+    enabled: true
+
+- name: "install python mysql extension"
+  pip:
+    name: "PyMySQL"
+    state: present
+
+- name: "setting mariadb root password"
+  ignore_errors: true
+  community.mysql.mysql_user:
+    login_user: "root"
+    login_password: ""
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    user: "root"
+    password: "{{ mysql_root_pass }}"
+
+
+- name: "removing anonymous users in mariadb"
+  community.mysql.mysql_user:
+    login_user: "root"
+    login_password: "{{ mysql_root_pass }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    user: ""
+    state: absent
+
+
+- name: "removing test db in mariadb"
+  community.mysql.mysql_db:
+    login_user: "root"
+    login_password: "{{ mysql_root_pass }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    name: "test"
+    state: absent
+
+- name: "creating wp db"
+  community.mysql.mysql_db:
+    login_user: "root"
+    login_password: "{{ mysql_root_pass }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    name: "{{  mysql_wpdb }}"
+    state: present
+
+
+- name: "creating wp user"
+  community.mysql.mysql_user:
+    login_user: "root"
+    login_password: "{{ mysql_root_pass }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    user: "{{  mysql_user }}"
+    password: "{{ mysql_user_pass }}"
+    state: present
+    priv: "{{ mysql_wpdb }}.*:ALL"
